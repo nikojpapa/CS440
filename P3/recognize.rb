@@ -63,34 +63,38 @@ end
 def alpha(t, state, obsSeq)
 	# puts "#{t}"
 	if t == 1
-		puts "#{@pi[state] * @b[state][obsSeq[0]]}"
-		puts "STATE: #{state}"
-		puts "pi: #{@pi[state]}"
+		# puts "@pi[state]: #{@pi[state]}"
+		# puts "@b[state][obsSeq[0]]: #{@b[state][obsSeq[0]]}"
+		# puts "RETURNING: #{@pi[state] * @b[state][obsSeq[0]]}"
 		return @pi[state] * @b[state][obsSeq[0]]
 	else
 		sum = 0
 		@states.each_with_index do |i, ind|
-			sum += alpha(t - 1, i, obsSeq) * @a[@states[ind]][state]
+			recursion = alpha(t - 1, i, obsSeq)
+			# puts "ADDING: #{recursion}"
+			sum += recursion * @a[@states[ind]][state]
 		end
 
-		return sum * @b[state][@vocab[t]]
+		# puts "@word[t]: #{@b[state][obsSeq[t-1]]}"
+		# puts "Sum: #{sum}"
+		return sum * @b[state][obsSeq[t-1]]
 	end
 end
 
 
 getMatrices(hmmLines, obsLines)
-pp @a
-pp @b
-pp @pi
+# pp @a
+# pp @b
+# pp @pi
 
 @o.each_with_index do |obsSeq|
 	bigT = obsSeq.length
 
 	sum = 0
 	@states.each do |state|
-		puts "CALLING: alpha(#{bigT}, #{state}, #{obsSeq}"
+		# puts "CALLING: alpha(#{bigT}, #{state}, #{obsSeq}"
 		# puts "#{sum}"
-		sum += alpha(1, state, obsSeq)
+		sum += alpha(bigT, state, obsSeq)
 	end
 
 	puts sum
