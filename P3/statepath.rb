@@ -60,33 +60,49 @@ def getMatrices(hmm, obs)
 	end
 end
 
-def alpha(t, state, obsSeq)
+def delta(t, state, obsSeq)
 	if t == 1
-		return @pi[state] * @b[state][obsSeq[0]]
+		return [@pi[state] * @b[state][obsSeq[0]], state]
 	else
-		sum = 0
+		max = 0
+		maxState = []
 		@states.each_with_index do |i, ind|
-			recursion = alpha(t - 1, i, obsSeq)
-			sum += recursion * @a[@states[ind]][state]
+			recursion = delta(t - 1, i, obsSeq)
+			possibleMax = recursion[0] * @a[@states[ind]][state] * @b[state][obsSeq[t-1]]
+
+			if possibleMax > max
+				max = possibleMax
+				maxState << recursion[1]
+			end
 		end
 
-		return sum * @b[state][obsSeq[t-1]]
+		return [max, maxState << state]
 	end
 end
-
 
 getMatrices(hmmLines, obsLines)
 
 @o.each_with_index do |obsSeq|
 	bigT = obsSeq.length
 
-	sum = 0
+	max = 0
+	maxState = []
 	@states.each do |state|
-		sum += alpha(bigT, state, obsSeq)
+		possibleMax = delta(bigT, state, obsSeq)
+
+		if possibleMax[0] > max
+			max = possibleMax[0]
+			maxState = possibleMax[1]
+		end
 	end
 
-	puts sum
+	puts "#{max} #{maxState.join(" ")}"
 end
+
+
+
+
+
 
 
 
