@@ -67,13 +67,12 @@ def alpha(t, state, obsSeq)
 		sum = 0
 		@states.each_with_index do |i, ind|
 			recursion = alpha(t - 1, i, obsSeq)
-			sum += recursion * @a[@states[ind]][state]
+			sum += recursion * @a[i][state]
 		end
 
 		return sum * @b[state][obsSeq[t-1]]
 	end
 end
-
 
 getMatrices(hmmLines, obsLines)
 

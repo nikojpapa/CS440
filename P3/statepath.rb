@@ -68,7 +68,7 @@ def delta(t, state, obsSeq)
 		maxState = []
 		@states.each_with_index do |i, ind|
 			recursion = delta(t - 1, i, obsSeq)
-			possibleMax = recursion[0] * @a[@states[ind]][state] * @b[state][obsSeq[t-1]]
+			possibleMax = recursion[0] * @a[i][state] * @b[state][obsSeq[t-1]]
 
 			if possibleMax > max
 				max = possibleMax
