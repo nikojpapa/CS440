@@ -113,7 +113,7 @@ end
 
 getMatrices(hmmLines, obsLines)
 
-@o.each_with_index do |obsSeq|
+@o.each_with_index do |obsSeq, ind|
 	newPi = []
 	newA = []
 	newB = []
@@ -124,7 +124,7 @@ getMatrices(hmmLines, obsLines)
 		@states.each do |j|
 			numerator = 0
 			denominator = 0
-			for t in (obsSeq.length - 1)
+			for t in 1..(obsSeq.length - 1)
 				numerator += epsilon(t, i, j, obsSeq)
 				denominator += gamma(t, i, obsSeq)
 			end
@@ -136,7 +136,7 @@ getMatrices(hmmLines, obsLines)
 		@vocab.each do |k|
 			numerator = 0
 			denominator = 0
-			for t in obsSeq.length
+			for t in 1..obsSeq.length
 				if obsSeq[t] == k
 					numerator += gamma(t, i, obsSeq)
 				end
@@ -147,6 +147,26 @@ getMatrices(hmmLines, obsLines)
 		newB << newBi
 	end
 
+	outname = "#{ind}-#{ARGV[2]}"
+	firstLine = "#{newA.length} #{newB[0].length} #{obsSeq.length}"
+	File.open(outname, "w") { |out|
+
+		out << "#{firstLine}\n" << "#{hmmLines[1]}\n" << "#{hmmLines[2]}\n" << "a:\n"
+		newA.each do |line|
+			out << "#{line}\n"
+		end
+
+		out << "b:\n"
+		newB.each do |line|
+			out << "#{line}\n"
+		end
+
+		out << "pi:\n"
+		newPi.each do |line|
+			out << "#{line}\n"
+		end
+	}
+
 	# bigT = obsSeq.length
 
 	# # puts "#{gamma(1, @states[2], obsSeq)}"
@@ -155,7 +175,7 @@ getMatrices(hmmLines, obsLines)
 	# 	sum += epsilon(2, @states[3], state, obsSeq)
 	# end
 
-	# # puts sum
+	# # # puts sum
 
 	# puts "#{gamma(2, @states[3], obsSeq)} = #{sum}"
 end
