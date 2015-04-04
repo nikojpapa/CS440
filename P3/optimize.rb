@@ -61,24 +61,12 @@ def getMatrices(hmm, obs)
 end
 
 def alpha(t, state, obsSeq)
-	# puts "Obs: #{obsSeq}"
-	# if top == true
-	# 	bigT = obsSeq.length
-
-	# 	sum = 0
-	# 	@states.each do |state|
-	# 		sum += alpha(bigT, state, obsSeq, false)
-	# 	end
-
-	# 	return sum
 	if t == 1
-		# puts "T_#{t}: #{@pi[state]} * #{@b[state][obsSeq[0]]}"
 		return @pi[state] * @b[state][obsSeq[0]]
 	else
 		sum = 0
 		@states.each_with_index do |i, ind|
 			recursion = alpha(t - 1, i, obsSeq)
-			# puts "T_#{t}: #{recursion} * #{@a[i][state]}"
 			sum += recursion * @a[i][state]
 		end
 
@@ -93,7 +81,6 @@ def beta(t, state, obsSeq)
 		sum = 0
 		@states.each_with_index do |j, ind|
 			recursion = beta(t + 1, j, obsSeq)
-			# puts "T_#{t}: #{@a[state][j]} * #{@b[j][obsSeq[t]]} * #{recursion}"
 			sum += @a[state][j] * @b[j][obsSeq[t]] * recursion
 		end
 
@@ -106,8 +93,6 @@ def gamma(t, state, obsSeq)
 	numerator = alpha(t, state, obsSeq) * beta(t, state, obsSeq)
 	denominator = 0
 	@states.each do |i|
-		# puts "recursive state #{i}" if t==2
-		# puts "alpha: #{alpha(t, i, obsSeq)}\nbeta: #{beta(t, i, obsSeq)}" if t==2
 		denominator += alpha(t, i, obsSeq) * beta(t, i, obsSeq)
 	end
 	puts "TIME: #{t}, NUMERATOR: #{numerator}"
@@ -123,7 +108,6 @@ def epsilon(t, fromState, toState, obsSeq)
 			denominator += alpha(t, i, obsSeq) * @a[i][j] * @b[j][obsSeq[t]] * beta(t+1, j, obsSeq)
 		end
 	end
-	# puts denominator
 	return numerator / denominator
 end	
 
@@ -141,7 +125,6 @@ pp @pi
 
 		newAi = []
 		@states.each do |j|
-			puts "FROM: #{i}, TO: #{j}" if i=="PREDICATE"
 			numerator = 0
 			denominator = 0
 			for t in 1..(obsSeq.length - 1)
@@ -149,7 +132,6 @@ pp @pi
 				denominator += gamma(t, i, obsSeq)
 			end
 			
-			puts "EPS: #{numerator}, GAMMA: #{denominator}\n\n" if i=="PREDICATE"
 			if denominator != 0
 				newAi << numerator / denominator
 			else
@@ -163,12 +145,15 @@ pp @pi
 			numerator = 0
 			denominator = 0
 			for t in 1..obsSeq.length
-				if obsSeq[t] == k
-					numerator += gamma(t, i, obsSeq)
-				end
+				numerator += gamma(t, i, obsSeq) if obsSeq[t-1] == k
 				denominator += gamma(t, i, obsSeq)
 			end
-			newBi << numerator / denominator
+
+			if denominator != 0
+				newBi << numerator / denominator
+			else
+				newBi << @b[i][k]
+			end
 		end
 		newB << newBi
 	end
@@ -189,20 +174,6 @@ pp @pi
 
 		out << "pi:\n" << "#{newPi.join(" ")}\n"
 	}
-
-	# puts epsilon(1, @states[0], @states[1], obsSeq)
-
-	# bigT = obsSeq.length
-
-	# # puts "#{gamma(1, @states[2], obsSeq)}"
-	# sum = 0
-	# @states.each do |state|
-	# 	sum += epsilon(2, @states[3], state, obsSeq)
-	# end
-
-	# # # puts sum
-
-	# puts "#{gamma(2, @states[3], obsSeq)} = #{sum}"
 end
 
 
