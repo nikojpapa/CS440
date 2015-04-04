@@ -62,12 +62,23 @@ end
 
 def alpha(t, state, obsSeq)
 	# puts "Obs: #{obsSeq}"
+	# if top == true
+	# 	bigT = obsSeq.length
+
+	# 	sum = 0
+	# 	@states.each do |state|
+	# 		sum += alpha(bigT, state, obsSeq, false)
+	# 	end
+
+	# 	return sum
 	if t == 1
+		# puts "T_#{t}: #{@pi[state]} * #{@b[state][obsSeq[0]]}"
 		return @pi[state] * @b[state][obsSeq[0]]
 	else
 		sum = 0
 		@states.each_with_index do |i, ind|
 			recursion = alpha(t - 1, i, obsSeq)
+			# puts "T_#{t}: #{recursion} * #{@a[i][state]}"
 			sum += recursion * @a[i][state]
 		end
 
@@ -82,7 +93,8 @@ def beta(t, state, obsSeq)
 		sum = 0
 		@states.each_with_index do |j, ind|
 			recursion = beta(t + 1, j, obsSeq)
-			sum += @a[state][j] * @b[j][obsSeq[t]]
+			# puts "T_#{t}: #{@a[state][j]} * #{@b[j][obsSeq[t]]} * #{recursion}"
+			sum += @a[state][j] * @b[j][obsSeq[t]] * recursion
 		end
 
 		return sum
@@ -90,11 +102,15 @@ def beta(t, state, obsSeq)
 end
 
 def gamma(t, state, obsSeq)
+	puts "alpha: #{alpha(t, state, obsSeq)}\nbeta: #{beta(t, state, obsSeq)}"
 	numerator = alpha(t, state, obsSeq) * beta(t, state, obsSeq)
 	denominator = 0
 	@states.each do |i|
+		# puts "recursive state #{i}" if t==2
+		# puts "alpha: #{alpha(t, i, obsSeq)}\nbeta: #{beta(t, i, obsSeq)}" if t==2
 		denominator += alpha(t, i, obsSeq) * beta(t, i, obsSeq)
 	end
+	puts "TIME: #{t}, NUMERATOR: #{numerator}"
 
 	return numerator / denominator
 end
@@ -107,11 +123,14 @@ def epsilon(t, fromState, toState, obsSeq)
 			denominator += alpha(t, i, obsSeq) * @a[i][j] * @b[j][obsSeq[t]] * beta(t+1, j, obsSeq)
 		end
 	end
-
+	# puts denominator
 	return numerator / denominator
 end	
 
 getMatrices(hmmLines, obsLines)
+pp @a
+pp @b
+pp @pi
 
 @o.each_with_index do |obsSeq, ind|
 	newPi = []
@@ -122,13 +141,20 @@ getMatrices(hmmLines, obsLines)
 
 		newAi = []
 		@states.each do |j|
+			puts "FROM: #{i}, TO: #{j}" if i=="PREDICATE"
 			numerator = 0
 			denominator = 0
 			for t in 1..(obsSeq.length - 1)
 				numerator += epsilon(t, i, j, obsSeq)
 				denominator += gamma(t, i, obsSeq)
 			end
-			newAi << numerator / denominator
+			
+			puts "EPS: #{numerator}, GAMMA: #{denominator}\n\n" if i=="PREDICATE"
+			if denominator != 0
+				newAi << numerator / denominator
+			else
+				newAi << @a[i][j]
+			end
 		end
 		newA << newAi
 
@@ -153,19 +179,18 @@ getMatrices(hmmLines, obsLines)
 
 		out << "#{firstLine}\n" << "#{hmmLines[1]}\n" << "#{hmmLines[2]}\n" << "a:\n"
 		newA.each do |line|
-			out << "#{line}\n"
+			out << "#{line.join(" ")}\n"
 		end
 
 		out << "b:\n"
 		newB.each do |line|
-			out << "#{line}\n"
+			out << "#{line.join(" ")}\n"
 		end
 
-		out << "pi:\n"
-		newPi.each do |line|
-			out << "#{line}\n"
-		end
+		out << "pi:\n" << "#{newPi.join(" ")}\n"
 	}
+
+	# puts epsilon(1, @states[0], @states[1], obsSeq)
 
 	# bigT = obsSeq.length
 
