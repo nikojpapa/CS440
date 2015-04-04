@@ -7,10 +7,10 @@ obsLines = obsText.split("\n")
 
 @states = []
 @vocab = []
-@a = {}
-@b = {}
-@pi = {}
-@o = []
+@a = {}  #transition matrix
+@b = {}  #emission matrix
+@pi = {} #initial prob matrix
+@o = []  #obs matrix
 
 def getMatrices(hmm, obs)
 	@states = hmm[1].split(" ")
@@ -18,7 +18,7 @@ def getMatrices(hmm, obs)
 
 	currentMatrix = nil
 	hmm.each do |line|
-		if line == "a:"
+		if line == "a:"          #which matrix we are looking at
 			currentMatrix = "a"
 			next
 		elsif line == "b:"
@@ -29,7 +29,7 @@ def getMatrices(hmm, obs)
 			next
 		end
 
-		currentLine = line.split(" ")
+		currentLine = line.split(" ")   #loads line into corresponding matrix
 		if currentMatrix == "a"
 			fromState = @states[@a.length]
 
@@ -55,14 +55,14 @@ def getMatrices(hmm, obs)
 		end
 	end
 
-	for lineNum in 1..Integer(obs[0])
+	for lineNum in 1..Integer(obs[0])   #loads output into obs matrix
 		@o << obs[lineNum * 2].split(" ")
 	end
 end
 
-def delta(t, state, obsSeq)
+def delta(t, state, obsSeq)    #highest probability along a single path
 	if t == 1
-		return [@pi[state] * @b[state][obsSeq[0]], state]
+		return [@pi[state] * @b[state][obsSeq[0]], state]  #returns probability along with its state
 	else
 		max = 0
 		maxState = []
@@ -83,7 +83,7 @@ end
 getMatrices(hmmLines, obsLines)
 
 @o.each_with_index do |obsSeq|
-	bigT = obsSeq.length
+	bigT = obsSeq.length       #gets max delta for the entire obs sequence
 
 	max = 0
 	maxState = []

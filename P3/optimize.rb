@@ -1,24 +1,23 @@
 require 'pp'
 
-hmmText = IO.binread(ARGV[0])
+hmmText = IO.binread(ARGV[0]) #getting lines for first .hmm and the .obs
 hmmLines = hmmText.split("\n")
 obsText = IO.binread(ARGV[1])
 obsLines = obsText.split("\n")
 
-@states = []
-@vocab = []
-@a = {}
-@b = {}
-@pi = {}
-@o = []
+def getMatrices(hmm, obs)  #parses .hmm and .obs file and loads the information into hashes
+	@a = {}  #transition matrix
+	@b = {}  #emission matrix
+	@pi = {} #initial prob matrix
+	@o = []  #obs matrix
 
-def getMatrices(hmm, obs)
 	@states = hmm[1].split(" ")
 	@vocab = hmm[2].split(" ")
 
+
 	currentMatrix = nil
 	hmm.each do |line|
-		if line == "a:"
+		if line == "a:"          #which matrix we are looking at
 			currentMatrix = "a"
 			next
 		elsif line == "b:"
@@ -29,7 +28,7 @@ def getMatrices(hmm, obs)
 			next
 		end
 
-		currentLine = line.split(" ")
+		currentLine = line.split(" ")   #loads line into corresponding matrix
 		if currentMatrix == "a"
 			fromState = @states[@a.length]
 
@@ -55,12 +54,12 @@ def getMatrices(hmm, obs)
 		end
 	end
 
-	for lineNum in 1..Integer(obs[0])
+	for lineNum in 1..Integer(obs[0])   #loads output into obs matrix
 		@o << obs[lineNum * 2].split(" ")
 	end
 end
 
-def alpha(t, state, obsSeq)
+def alpha(t, state, obsSeq)   #gets the probability of the partial observation sequence to given state
 	if t == 1
 		return @pi[state] * @b[state][obsSeq[0]]
 	else
@@ -74,7 +73,7 @@ def alpha(t, state, obsSeq)
 	end
 end
 
-def beta(t, state, obsSeq)
+def beta(t, state, obsSeq)   #gets the probability of the partial observation sequence from given state
 	if t == obsSeq.length
 		return 1
 	else
@@ -88,19 +87,17 @@ def beta(t, state, obsSeq)
 	end
 end
 
-def gamma(t, state, obsSeq)
-	puts "alpha: #{alpha(t, state, obsSeq)}\nbeta: #{beta(t, state, obsSeq)}"
+def gamma(t, state, obsSeq)  #the probability of being in state
 	numerator = alpha(t, state, obsSeq) * beta(t, state, obsSeq)
 	denominator = 0
 	@states.each do |i|
 		denominator += alpha(t, i, obsSeq) * beta(t, i, obsSeq)
 	end
-	puts "TIME: #{t}, NUMERATOR: #{numerator}"
 
 	return numerator / denominator
 end
 
-def epsilon(t, fromState, toState, obsSeq)
+def epsilon(t, fromState, toState, obsSeq)  #the probability of being in fromState going to toState
 	numerator = alpha(t, fromState, obsSeq) * @a[fromState][toState] * @b[toState][obsSeq[t]] * beta(t+1, toState, obsSeq)
 	denominator = 0
 	@states.each do |i|
@@ -111,19 +108,27 @@ def epsilon(t, fromState, toState, obsSeq)
 	return numerator / denominator
 end	
 
+def terminateAlpha(states, obsSeq)  #gets alpha for the entire obs sequence
+	bigT = obsSeq.length
+
+	sum = 0
+	@states.each do |state|
+		sum += alpha(bigT, state, obsSeq)
+	end
+
+	return sum
+end
+
 getMatrices(hmmLines, obsLines)
-pp @a
-pp @b
-pp @pi
 
 @o.each_with_index do |obsSeq, ind|
 	newPi = []
 	newA = []
 	newB = []
 	@states.each do |i|
-		newPi << gamma(1, i, obsSeq)
+		newPi << gamma(1, i, obsSeq)   #update pi matrix
 
-		newAi = []
+		newAi = []                    #update transition matrix
 		@states.each do |j|
 			numerator = 0
 			denominator = 0
@@ -140,7 +145,7 @@ pp @pi
 		end
 		newA << newAi
 
-		newBi = []
+		newBi = []                 #update emission matrix
 		@vocab.each do |k|
 			numerator = 0
 			denominator = 0
@@ -158,7 +163,7 @@ pp @pi
 		newB << newBi
 	end
 
-	outname = "#{ind}-#{ARGV[2]}"
+	outname = "#{ind}-#{ARGV[2]}"               #produce output .hmm
 	firstLine = "#{newA.length} #{newB[0].length} #{obsSeq.length}"
 	File.open(outname, "w") { |out|
 
@@ -174,6 +179,14 @@ pp @pi
 
 		out << "pi:\n" << "#{newPi.join(" ")}\n"
 	}
+
+	before = terminateAlpha(@states, obsSeq)     #output before and after probabilities
+	hmm2Text = IO.binread(outname)
+	hmm2Lines = hmm2Text.split("\n")
+	getMatrices(hmm2Lines, obsLines)
+	after = terminateAlpha(@states, obsSeq)
+
+	puts "#{before} #{after}"
 end
 
 
