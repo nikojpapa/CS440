@@ -36,7 +36,6 @@ def getPoss(board, lastPlay):
 	leftPos = size+2 - rightPos - upPos
 	possTop = upPos+1 if upPos+1 <= size else upPos
 	possBottom = upPos-1 if upPos-1 >= 1 else upPos
-	pp.pprint(rightPos+1 <= size)
 	possRight = rightPos+1 if rightPos+1 <= size else rightPos
 	possLeft = rightPos-1 if rightPos-1 >= 1 else rightPos
 
@@ -45,10 +44,6 @@ def getPoss(board, lastPlay):
 
 def scoreThis(board, lastPlay):
 	possible = getPoss(board, lastPlay)
-	pp.pprint("")
-	pp.pprint(board)
-	pp.pprint(lastPlay)
-	pp.pprint(possible)
 	possTop = possible[3]
 	possBottom = possible[4]
 	possRight = possible[5]
@@ -61,7 +56,7 @@ def scoreThis(board, lastPlay):
 				if board[i][j] != 0:
 					numAvail += 1
 
-	return (6 - numAvail, lastPlay)
+	return (numAvail, lastPlay)
 
 def copyBoard(curentBoard):
 	newBoard = []
@@ -91,20 +86,21 @@ def alphaBeta(board, lastPlay, depth, isMax, alpha, beta):
 
 			for i in range(possBottom, possTop+1):  #for each child
 				for j in range(possLeft, possRight+1):
-					if board[i][j] != 0:
-						continue #(skip if move not available)
-					child = copyBoard(board)
-					for color in range(1, 3):  #for each color
-						child[i][j] = color
-						childScore = alphaBeta(child, [color, i, j, size-i-j], depth-1, False, alpha, beta)
-						if childScore[0] > score[0]:
-							score = childScore
-						if score[0] > alpha:
-							alpha = score[0]
+					if j < len(board[i]):
+						if board[i][j] != 0:
+							continue #(skip if move not available)
+						for color in range(1, 3):  #for each color
+							board[i][j] = color
+							childScore = alphaBeta(board, [color, i, j, size+2-i-j], depth-1, False, alpha, beta)
+							board[i][j] = 0
+							if childScore[0] > score[0]:
+								score = childScore
+							if score[0] > alpha:
+								alpha = score[0]
+							if beta <= alpha:
+								break
 						if beta <= alpha:
 							break
-					if beta <= alpha:
-						break
 				if beta <= alpha:
 					break
 			return score
@@ -113,37 +109,33 @@ def alphaBeta(board, lastPlay, depth, isMax, alpha, beta):
 
 			for i in range(possBottom, possTop+1):  #for each child
 				for j in range(possLeft, possRight+1):
-					if board[i][j] != 0:
-						continue #(skip if move not available)
-					child = copyBoard(board)
-					for color in range(1, 3):  #for each color
-						child[i][j] = color
-						childScore = alphaBeta(child, [color, i, j, size-i-j], depth-1, True, alpha, beta)
-						if childScore[0] < score[0]:
-							score = childScore
-						if score[0] < beta:
-							beta = score
+					if j < len(board[i]):
+						if board[i][j] != 0:
+							continue #(skip if move not available)
+						for color in range(1, 3):  #for each color
+							board[i][j] = color
+							childScore = alphaBeta(board, [color, i, j, size+2-i-j], depth-1, True, alpha, beta)
+							board[i][j] = 0
+							if childScore[0] < score[0]:
+								score = childScore
+							if score[0] < beta:
+								beta = score
+							if beta <= alpha:
+								break
 						if beta <= alpha:
 							break
-					if beta <= alpha:
-						break
 				if beta <= alpha:
 					break
 			return score
 
 
-pp.pprint(copyBoard(board))
-pp.pprint(getPoss(board, lastPlay))
-pp.pprint(scoreThis(board, lastPlay))
-pp.pprint(alphaBeta(board, lastPlay, 1, True, negInf, inf))
-
-
+bestMove = alphaBeta(board, lastPlay, 6, True, negInf, inf)
+nextMove = map(str, bestMove[1])
+makeMove = ",".join(nextMove)
 				
 
 #print to stdout for AtroposGame
-sys.stdout.write("(3,2,2,2)");
-# As you can see Zook's algorithm is not very intelligent. He 
-# will be disqualified.
+sys.stdout.write("(" + makeMove + ")");
 
 
 
