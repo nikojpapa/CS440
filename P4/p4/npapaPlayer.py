@@ -159,27 +159,34 @@ def scoreThis(board, lastPlay, isMax):
 
 	trapScore = 0
 	avails = listAdjacents(board, lastPlay, True)
-	bounded = boundedAvails(board, lastPlay, set())
-	if len(bounded) % 2 == 0:
-		if isMax:
-			totalScore += 1
-		else:
-			totalScore -= 1
+	madeBounds = set()
+	oddBounds = 0
+	evenBounds = 0
+	for (up, right) in avails:
+		# pp.pprint("167: " + str((up, right)))
+		# pp.pprint(allBounds)
+		if (up, right) not in allBounds:
+			bounded = boundedAvails(board, [0,up,right,size+2-up-right], set())
+			# pp.pprint(bounded)
+			madeBounds = madeBounds | bounded
+			if len(bounded) % 2 == 0:
+				evenBounds += 1
+			else:
+				oddBounds += 1
+	# pp.pprint(oddBounds)
+	# pp.pprint(evenBounds)
+	trapScore = (oddBounds - evenBounds) * 7
 
-	# color = lastPlay[0]
-	# unavailAdjacents = listAdjacents(board, lastPlay, False)
-	# if isMax:
-	# 	scores = [0, 6, 6, 6]
-	# 	for (up, right) in unavailAdjacents:
-	# 		scores[board[up][right]] -= 1
-	# 		unPopScore = scores[color]
-	# 		return (unPopScore, lastPlay)
-	# else:
-	# 	scores = [8, 0, 0, 0]
-	# 	for (up, right) in unavailAdjacents:
-	# 		scores[board[up][right]] += 1
-	# 		unPopScore = scores[color]
-	# 		return (unPopScore, lastPlay)
+	upPopScore = 0
+	color = lastPlay[0]
+	unavailAdjacents = listAdjacents(board, lastPlay, False)
+	scores = [0, 0, 0, 0]
+	for (up, right) in unavailAdjacents:
+		if isMax:
+			scores[board[up][right]] += 1
+		else:
+			scores[board[up][right]] -= 1
+	unPopScore = scores[color]
 
 	# numAvail = len(listAdjacents(board, lastPlay, True))
 	# if numAvail==0:
@@ -194,6 +201,7 @@ def scoreThis(board, lastPlay, isMax):
 	# 	else:
 	# 		return (0 + numAvail, lastPlay)
 
+	totalScore = trapScore + unPopScore
 	return (totalScore, lastPlay)
 
 def alphaBeta(board, lastPlay, depth, isMax, alpha, beta):
@@ -206,7 +214,7 @@ def alphaBeta(board, lastPlay, depth, isMax, alpha, beta):
 		# pp.pprint(children)
 		if not children:
 			children = getAllAvails(board)
-		pp.pprint("CHILDREN: " + str(children))
+		# pp.pprint("CHILDREN: " + str(children))
 		if isMax:
 			# pp.pprint("MAXIMIZER::: " + str(depth))
 			score = (negInf, [])
