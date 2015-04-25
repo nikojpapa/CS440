@@ -36,24 +36,16 @@ def getPoss(board, lastPlay):
 
 	return (upPos, rightPos, leftPos, possTop, possBottom, possRight, possLeft)
 
-def listAdjacents(board, lastPlay, avail):
-	upPos = lastPlay[1]
-	rightPos = lastPlay[2]
-	adj = []
-	if upPos > 1:
-		adj = [(upPos+1, rightPos-1), (upPos+1, rightPos), (upPos, rightPos+1), (upPos-1, rightPos+1), (upPos-1, rightPos), (upPos, rightPos-1)]
-	else:
-		adj = [(upPos+1, rightPos-1), (upPos+1, rightPos), (upPos, rightPos+1), (upPos-1, rightPos), (upPos-1, rightPos-1), (upPos, rightPos-1)]
 
-	if avail:
-		avails = []
-		for (up, right) in adj:
-			if board[up][right] == 0:
-				avails.append((up, right))
-		# pp.pprint(avails)
-		return avails
-	else:
-		return adj
+def copyBoard(curentBoard):
+	newBoard = []
+	for i in curentBoard:
+		thisCol = []
+		for j in i:
+			thisCol.append(j)
+		newBoard.append(thisCol)
+	return newBoard
+
 
 def isAdjacent(lastPlay, newPlay):
 
@@ -83,10 +75,36 @@ def isAdjacent(lastPlay, newPlay):
 		return True
 
 
+def listAdjacents(board, lastPlay, avail):
+	upPos = lastPlay[1]
+	rightPos = lastPlay[2]
+	adj = []
+	if upPos > 1:
+		adj = [(upPos+1, rightPos-1), (upPos+1, rightPos), (upPos, rightPos+1), (upPos-1, rightPos+1), (upPos-1, rightPos), (upPos, rightPos-1)]
+	else:
+		adj = [(upPos+1, rightPos-1), (upPos+1, rightPos), (upPos, rightPos+1), (upPos-1, rightPos), (upPos-1, rightPos-1), (upPos, rightPos-1)]
+
+	if avail=="all":
+		return adj
+	else:
+		avails = []
+		unavails = []
+		for (up, right) in adj:
+			if board[up][right] == 0:
+				avails.append((up, right))
+			else:
+				unavails.append((up, right))
+		# pp.pprint(avails)
+		if avail:
+			return avails
+		else:
+			return unavails
+
+
 def moveLoses(board, move):
 	# pp.pprint(board)
 	color = move[0]
-	adjacents = listAdjacents(board, move, False)
+	adjacents = listAdjacents(board, move, "all")
 	# pp.pprint(adjacents)
 
 	for ind, (up, right) in enumerate(adjacents):
@@ -105,6 +123,9 @@ def moveLoses(board, move):
 			return True
 	return False
 
+def leastPopulated(board, lastPlay):
+	unavailAdjacents = listAdjacents(board, lastPlay, False)
+
 def scoreThis(board, lastPlay, isMax):
 
 	if moveLoses(board, lastPlay):
@@ -113,39 +134,36 @@ def scoreThis(board, lastPlay, isMax):
 		else:
 			return (8, lastPlay)
 
-	numAvail = len(listAdjacents(board, lastPlay, True))
-
-	if numAvail==0:
-		if not isMax:
-			return (1, lastPlay)
-		else:
-			return (7, lastPlay)
+	color = lastPlay[0]
+	unavailAdjacents = listAdjacents(board, lastPlay, False)
+	if isMax:
+		scores = [0, 6, 6, 6]
+		for (up, right) in unavailAdjacents:
+			scores[board[up][right]] -= 1
+			unPopScore = scores[color]
+			return (unPopScore, lastPlay)
 	else:
-		# pp.pprint(8 - numAvail)
-		if not isMax:
-			return (8 - numAvail, lastPlay)
-		else:
-			return (0 + numAvail, lastPlay)
+		scores = [8, 0, 0, 0]
+		for (up, right) in unavailAdjacents:
+			scores[board[up][right]] += 1
+			unPopScore = scores[color]
+			return (unPopScore, lastPlay)
 
-def copyBoard(curentBoard):
-	newBoard = []
-	for i in curentBoard:
-		thisCol = []
-		for j in i:
-			thisCol.append(j)
-		newBoard.append(thisCol)
-	return newBoard
+	# numAvail = len(listAdjacents(board, lastPlay, True))
+	# if numAvail==0:
+	# 	if not isMax:
+	# 		return (1+unPopScore, lastPlay)
+	# 	else:
+	# 		return (7, lastPlay)
+	# else:
+	# 	# pp.pprint(8 - numAvail)
+	# 	if not isMax:
+	# 		return (8+unPopScore - numAvail, lastPlay)
+	# 	else:
+	# 		return (0 + numAvail, lastPlay)
 
 
 def alphaBeta(board, lastPlay, depth, isMax, alpha, beta):
-	possible = getPoss(board, lastPlay)
-	upPos = possible[0]
-	rightPos = possible[1]
-	leftPos = possible[2]
-	possTop = possible[3]
-	possBottom = possible[4]
-	possRight = possible[5]
-	possLeft = possible[6]
 
 	if depth == 0 or moveLoses(board, lastPlay) or len(listAdjacents(board, lastPlay, True)) == 0:
 		# pp.pprint("hi")
@@ -198,7 +216,7 @@ def alphaBeta(board, lastPlay, depth, isMax, alpha, beta):
 			return score
 
 
-bestMove = alphaBeta(board, lastPlay, 6, True, negInf, inf)
+bestMove = alphaBeta(board, lastPlay, 7, True, negInf, inf)
 nextMove = map(str, bestMove[1])
 makeMove = ",".join(nextMove)
 				
