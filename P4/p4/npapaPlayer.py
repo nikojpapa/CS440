@@ -160,7 +160,7 @@ def scoreThis(board, lastPlay, isMax):
 	trapScore = 0
 	avails = listAdjacents(board, lastPlay, True)
 	bounded = boundedAvails(board, lastPlay, set())
-	if len(bounded) % 2 == 1:
+	if len(bounded) % 2 == 0:
 		if isMax:
 			totalScore += 1
 		else:
