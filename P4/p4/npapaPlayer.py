@@ -135,19 +135,18 @@ def getAllAvails(board):
 				avails.append((rowNum, colNum))
 	return avails
 
-def boundedAvails(board, lastPlay):
-	setOfEmpties = []
+def boundedAvails(board, lastPlay, alreadySaw):
 	avails = listAdjacents(board, lastPlay, True)
-	setOfEmpties.append(avails)
-	pp.pprint(setOfEmpties)
-	
+	unseenAvails = set(avails) - alreadySaw
+	myName = set([(lastPlay[1], lastPlay[2])])
+	nameList = alreadySaw | unseenAvails | myName
 
-	for (up, right) in avails:
-		additionalSpots = boundedAvails(board, [0, up, right, size+2-up-right])
-		setOfEmpties.append(additionalSpots)
+	for (up, right) in unseenAvails:
+		newNames = boundedAvails(board, [0, up, right, size+2-up-right], nameList)
+		nameList = nameList | newNames
 
-	pp.pprint(setOfEmpties)
-	return set(setOfEmpties)
+	# pp.pprint(nameList)
+	return nameList
 
 def scoreThis(board, lastPlay, isMax):
 	totalScore = 0
@@ -160,13 +159,12 @@ def scoreThis(board, lastPlay, isMax):
 
 	trapScore = 0
 	avails = listAdjacents(board, lastPlay, True)
-	for (up, right) in avails:
-		bounded = boundedAvails(board, [0, up, right, size+2-up-right])
-		if bounded % 2 == 1:
-			if isMax:
-				totalScore += 1
-			else:
-				totalScore -= 1
+	bounded = boundedAvails(board, lastPlay, set())
+	if len(bounded) % 2 == 1:
+		if isMax:
+			totalScore += 1
+		else:
+			totalScore -= 1
 
 	# color = lastPlay[0]
 	# unavailAdjacents = listAdjacents(board, lastPlay, False)
@@ -196,7 +194,7 @@ def scoreThis(board, lastPlay, isMax):
 	# 	else:
 	# 		return (0 + numAvail, lastPlay)
 
-	return totalScore
+	return (totalScore, lastPlay)
 
 def alphaBeta(board, lastPlay, depth, isMax, alpha, beta):
 
@@ -208,6 +206,7 @@ def alphaBeta(board, lastPlay, depth, isMax, alpha, beta):
 		# pp.pprint(children)
 		if not children:
 			children = getAllAvails(board)
+		pp.pprint("CHILDREN: " + str(children))
 		if isMax:
 			# pp.pprint("MAXIMIZER::: " + str(depth))
 			score = (negInf, [])
@@ -255,7 +254,7 @@ def alphaBeta(board, lastPlay, depth, isMax, alpha, beta):
 			return score
 
 
-bestMove = alphaBeta(board, lastPlay, 2, True, negInf, inf)
+bestMove = alphaBeta(board, lastPlay, 1, True, negInf, inf)
 nextMove = map(str, bestMove[1])
 makeMove = ",".join(nextMove)
 				
