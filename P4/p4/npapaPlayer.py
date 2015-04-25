@@ -105,17 +105,27 @@ def moveLoses(board, move):
 			return True
 	return False
 
-def scoreThis(board, lastPlay):
+def scoreThis(board, lastPlay, isMax):
 
 	if moveLoses(board, lastPlay):
-		return (0, lastPlay)
+		if not isMax:
+			return (0, lastPlay)
+		else:
+			return (8, lastPlay)
 
 	numAvail = len(listAdjacents(board, lastPlay, True))
 
 	if numAvail==0:
-		return (1, lastPlay)
+		if not isMax:
+			return (1, lastPlay)
+		else:
+			return (7, lastPlay)
 	else:
-		return (8 - numAvail, lastPlay)
+		# pp.pprint(8 - numAvail)
+		if not isMax:
+			return (8 - numAvail, lastPlay)
+		else:
+			return (0 + numAvail, lastPlay)
 
 def copyBoard(curentBoard):
 	newBoard = []
@@ -137,23 +147,27 @@ def alphaBeta(board, lastPlay, depth, isMax, alpha, beta):
 	possRight = possible[5]
 	possLeft = possible[6]
 
-	if depth == 0 or moveLoses(board, lastPlay):
+	if depth == 0 or moveLoses(board, lastPlay) or len(listAdjacents(board, lastPlay, True)) == 0:
 		# pp.pprint("hi")
-		return scoreThis(board, lastPlay)
+		return scoreThis(board, lastPlay, isMax)
 	else:
 		if isMax:
+			# pp.pprint("MAXIMIZER::: " + str(depth))
 			score = (negInf, [])
 			# pp.pprint("hi")
 			# pp.pprint(listAdjacents(board, lastPlay, True))
 			for (up, right) in listAdjacents(board, lastPlay, True):
 				# pp.pprint("hi")
-				for color in range(1, 3):  #for each color							
+				for color in range(1, 4):  #for each color							
 					board[up][right] = color
 					move = [color, up, right, size+2-up-right]
+					# pp.pprint("MAX MOVE: " + str(move))
 					childScore = alphaBeta(board, move, depth-1, False, alpha, beta)
-					# pp.pprint(childScore)
+					# pp.pprint("MAX: " + str(childScore[0]) + ", " + str(move))
+					# pp.pprint("CHILDSCORE: " + str(childScore))
 					board[up][right] = 0
 					if childScore[0] > score[0]:
+						# pp.pprint(str(depth) + " :: " + str(childScore[0]) + " > " + str(score[0]))
 						score = (childScore[0], move)
 					if score[0] > alpha:
 						alpha = score[0]
@@ -161,17 +175,21 @@ def alphaBeta(board, lastPlay, depth, isMax, alpha, beta):
 						break
 			return score
 		else:
-			# pp.pprint("hey")
+			# pp.pprint("MINIMIZER::: " + str(depth))
 
 			score = (inf, [])
 
 			for (up, right) in listAdjacents(board, lastPlay, True):
-				for color in range(1, 3):  #for each color							
+				for color in range(1, 4):  #for each color							
 					board[up][right] = color
 					move = [color, up, right, size+2-up-right]
+					# pp.pprint("MIN MOVE: " + str(move))
 					childScore = alphaBeta(board, move, depth-1, True, alpha, beta)
+					# pp.pprint("MIN: " + str(childScore[0]) + ", " + str(move))
+					# pp.pprint(childScore)
 					board[up][right] = 0
 					if childScore[0] < score[0]:
+						# pp.pprint(str(depth) + " :: " + str(childScore[0]) + " < " + str(score[0]))
 						score = (childScore[0], move)
 					if score[0] < beta:
 						beta = score[0]
@@ -180,7 +198,7 @@ def alphaBeta(board, lastPlay, depth, isMax, alpha, beta):
 			return score
 
 
-bestMove = alphaBeta(board, lastPlay, 2, True, negInf, inf)
+bestMove = alphaBeta(board, lastPlay, 6, True, negInf, inf)
 nextMove = map(str, bestMove[1])
 makeMove = ",".join(nextMove)
 				
