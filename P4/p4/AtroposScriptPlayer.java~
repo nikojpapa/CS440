@@ -42,7 +42,7 @@ public class AtroposScriptPlayer extends AtroposPlayer {
     String result = "";
     try {
       Process turn = runtime.exec(this.scriptName + " " + stateString);
-      System.out.println("RUNNING: " + this.scriptName + " \"" + stateString + "\"");
+      System.out.println("RUNNING: " + this.scriptName + " " + stateString);
       BufferedInputStream output = new BufferedInputStream(turn.getInputStream());
     
       //wait for the program to finish

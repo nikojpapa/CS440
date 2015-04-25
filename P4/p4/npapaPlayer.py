@@ -5,22 +5,17 @@ pp = pprint.PrettyPrinter(indent=4)
 inf = float("inf")
 negInf = float("-inf")
 
-# print to stderr for debugging purposes
-# remove all debugging statements before submitting your code
-msg = "Given board " + sys.argv[1] + "\n\n"
-sys.stderr.write(msg)
-
 #parse the input string, i.e., argv[1]
 inp = sys.argv[1].replace("[", "").split("]")
 lastPlay = inp.pop(len(inp)-1).replace("LastPlay:", "")
+size = len(inp) - 2
 remove = re.compile('(LastPlay:|\(|\))')
 lastPlay = remove.sub("", lastPlay).split(",")
 if lastPlay[0] == "null":
-	lastPlay =  "first move"
+	lastPlay =  [1,1,1,size+2]
 else:
 	for ind, num in enumerate(lastPlay):
 		lastPlay[ind] = int(num)
-size = len(inp) - 2
 board = []
 for row in reversed(inp):
 	thisRow = []
@@ -33,7 +28,7 @@ for row in reversed(inp):
 def getPoss(board, lastPlay):
 	upPos = lastPlay[1]
 	rightPos = lastPlay[2]
-	leftPos = size+2 - rightPos - upPos
+	leftPos = lastPlay[3]
 	possTop = upPos+1 if upPos+1 <= size else upPos
 	possBottom = upPos-1 if upPos-1 >= 1 else upPos
 	possRight = rightPos+1 if rightPos+1 <= size else rightPos
@@ -41,22 +36,86 @@ def getPoss(board, lastPlay):
 
 	return (upPos, rightPos, leftPos, possTop, possBottom, possRight, possLeft)
 
+def listAdjacents(board, lastPlay, avail):
+	upPos = lastPlay[1]
+	rightPos = lastPlay[2]
+	adj = []
+	if upPos > 1:
+		adj = [(upPos+1, rightPos-1), (upPos+1, rightPos), (upPos, rightPos+1), (upPos-1, rightPos+1), (upPos-1, rightPos), (upPos, rightPos-1)]
+	else:
+		adj = [(upPos+1, rightPos-1), (upPos+1, rightPos), (upPos, rightPos+1), (upPos-1, rightPos), (upPos-1, rightPos-1), (upPos, rightPos-1)]
+
+	if avail:
+		avails = []
+		for (up, right) in adj:
+			if board[up][right] == 0:
+				avails.append((up, right))
+		# pp.pprint(avails)
+		return avails
+	else:
+		return adj
+
+def isAdjacent(lastPlay, newPlay):
+
+	lastUp = lastPlay[1]
+	lastRight = lastPlay[2]
+	lastLeft = lastPlay[3]
+	newColor = newPlay[0]
+	newUp = newPlay[1]
+	newRight = newPlay[2]
+	newLeft = newPlay[3]
+	# pp.pprint(lastPlay)
+	# pp.pprint(newPlay)
+
+	heightDist = newUp - lastUp
+	rightDist = newRight - lastRight
+	# pp.pprint(str(heightDist) + ", " + str(rightDist))
+
+	if abs(heightDist) > 1:
+		return False
+	elif heightDist==1 and (rightDist < -1 or rightDist > 0):
+		return False
+	elif heightDist==0 and (rightDist < -1 or rightDist == 0 or rightDist > 1):
+		return False
+	elif heightDist==-1 and (rightDist < 0 or rightDist > 1):
+		return False
+	else:
+		return True
+
+
+def moveLoses(board, move):
+	# pp.pprint(board)
+	color = move[0]
+	adjacents = listAdjacents(board, move, False)
+	# pp.pprint(adjacents)
+
+	for ind, (up, right) in enumerate(adjacents):
+		colors = []
+		colors.append(color)
+		if board[up][right] != 0:
+			colors.append(board[up][right])
+
+		(up2, right2) = adjacents[(ind+1)%len(adjacents)]
+		if board[up2][right2] != 0:
+			colors.append(board[up2][right2])
+
+		# pp.pprint(colors)
+		if len(set(colors)) == 3:
+			# pp.pprint(str((up, right)) + " = " + str(board[up][right]) + ", " + str((up2, right2)) + " = " + str(board[up2][right2]))
+			return True
+	return False
 
 def scoreThis(board, lastPlay):
-	possible = getPoss(board, lastPlay)
-	possTop = possible[3]
-	possBottom = possible[4]
-	possRight = possible[5]
-	possLeft = possible[6]
 
-	numAvail = 0
-	for i in range(possBottom, possTop+1):
-		for j in range(possLeft, possRight+1):
-			if j < len(board[i]):
-				if board[i][j] != 0:
-					numAvail += 1
+	if moveLoses(board, lastPlay):
+		return (0, lastPlay)
 
-	return (numAvail, lastPlay)
+	numAvail = len(listAdjacents(board, lastPlay, True))
+
+	if numAvail==0:
+		return (1, lastPlay)
+	else:
+		return (8 - numAvail, lastPlay)
 
 def copyBoard(curentBoard):
 	newBoard = []
@@ -78,58 +137,50 @@ def alphaBeta(board, lastPlay, depth, isMax, alpha, beta):
 	possRight = possible[5]
 	possLeft = possible[6]
 
-	if depth == 0:  #or node = terminal node
+	if depth == 0 or moveLoses(board, lastPlay):
+		# pp.pprint("hi")
 		return scoreThis(board, lastPlay)
 	else:
 		if isMax:
 			score = (negInf, [])
-
-			for i in range(possBottom, possTop+1):  #for each child
-				for j in range(possLeft, possRight+1):
-					if j < len(board[i]):
-						if board[i][j] != 0:
-							continue #(skip if move not available)
-						for color in range(1, 3):  #for each color
-							board[i][j] = color
-							childScore = alphaBeta(board, [color, i, j, size+2-i-j], depth-1, False, alpha, beta)
-							board[i][j] = 0
-							if childScore[0] > score[0]:
-								score = childScore
-							if score[0] > alpha:
-								alpha = score[0]
-							if beta <= alpha:
-								break
-						if beta <= alpha:
-							break
-				if beta <= alpha:
-					break
+			# pp.pprint("hi")
+			# pp.pprint(listAdjacents(board, lastPlay, True))
+			for (up, right) in listAdjacents(board, lastPlay, True):
+				# pp.pprint("hi")
+				for color in range(1, 3):  #for each color							
+					board[up][right] = color
+					move = [color, up, right, size+2-up-right]
+					childScore = alphaBeta(board, move, depth-1, False, alpha, beta)
+					# pp.pprint(childScore)
+					board[up][right] = 0
+					if childScore[0] > score[0]:
+						score = (childScore[0], move)
+					if score[0] > alpha:
+						alpha = score[0]
+					if beta <= alpha:
+						break
 			return score
 		else:
+			# pp.pprint("hey")
+
 			score = (inf, [])
 
-			for i in range(possBottom, possTop+1):  #for each child
-				for j in range(possLeft, possRight+1):
-					if j < len(board[i]):
-						if board[i][j] != 0:
-							continue #(skip if move not available)
-						for color in range(1, 3):  #for each color
-							board[i][j] = color
-							childScore = alphaBeta(board, [color, i, j, size+2-i-j], depth-1, True, alpha, beta)
-							board[i][j] = 0
-							if childScore[0] < score[0]:
-								score = childScore
-							if score[0] < beta:
-								beta = score
-							if beta <= alpha:
-								break
-						if beta <= alpha:
-							break
-				if beta <= alpha:
-					break
+			for (up, right) in listAdjacents(board, lastPlay, True):
+				for color in range(1, 3):  #for each color							
+					board[up][right] = color
+					move = [color, up, right, size+2-up-right]
+					childScore = alphaBeta(board, move, depth-1, True, alpha, beta)
+					board[up][right] = 0
+					if childScore[0] < score[0]:
+						score = (childScore[0], move)
+					if score[0] < beta:
+						beta = score[0]
+					if beta <= alpha:
+						break
 			return score
 
 
-bestMove = alphaBeta(board, lastPlay, 6, True, negInf, inf)
+bestMove = alphaBeta(board, lastPlay, 2, True, negInf, inf)
 nextMove = map(str, bestMove[1])
 makeMove = ",".join(nextMove)
 				
