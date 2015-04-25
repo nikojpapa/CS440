@@ -12,7 +12,7 @@ size = len(inp) - 2
 remove = re.compile('(LastPlay:|\(|\))')
 lastPlay = remove.sub("", lastPlay).split(",")
 if lastPlay[0] == "null":
-	lastPlay =  [1,1,1,size+2]
+	None# lastPlay =  [1,1,1,size+2]
 else:
 	for ind, num in enumerate(lastPlay):
 		lastPlay[ind] = int(num)
@@ -76,6 +76,8 @@ def isAdjacent(lastPlay, newPlay):
 
 
 def listAdjacents(board, lastPlay, avail):
+	if lastPlay[0]=="null":
+		return []
 	upPos = lastPlay[1]
 	rightPos = lastPlay[2]
 	adj = []
@@ -102,6 +104,8 @@ def listAdjacents(board, lastPlay, avail):
 
 
 def moveLoses(board, move):
+	if move[0] == "null":
+		return False
 	# pp.pprint(board)
 	color = move[0]
 	adjacents = listAdjacents(board, move, "all")
@@ -123,58 +127,93 @@ def moveLoses(board, move):
 			return True
 	return False
 
-def leastPopulated(board, lastPlay):
-	unavailAdjacents = listAdjacents(board, lastPlay, False)
+def getAllAvails(board):
+	avails = []
+	for rowNum, row in enumerate(board):
+		for colNum, spot in enumerate(row):
+			if spot == 0:
+				avails.append((rowNum, colNum))
+	return avails
+
+def boundedAvails(board, lastPlay):
+	setOfEmpties = []
+	avails = listAdjacents(board, lastPlay, True)
+	setOfEmpties.append(avails)
+	pp.pprint(setOfEmpties)
+	
+
+	for (up, right) in avails:
+		additionalSpots = boundedAvails(board, [0, up, right, size+2-up-right])
+		setOfEmpties.append(additionalSpots)
+
+	pp.pprint(setOfEmpties)
+	return set(setOfEmpties)
 
 def scoreThis(board, lastPlay, isMax):
+	totalScore = 0
 
 	if moveLoses(board, lastPlay):
 		if not isMax:
-			return (0, lastPlay)
+			return (negInf, lastPlay)
 		else:
-			return (8, lastPlay)
+			return (inf, lastPlay)
 
-	color = lastPlay[0]
-	unavailAdjacents = listAdjacents(board, lastPlay, False)
-	if isMax:
-		scores = [0, 6, 6, 6]
-		for (up, right) in unavailAdjacents:
-			scores[board[up][right]] -= 1
-			unPopScore = scores[color]
-			return (unPopScore, lastPlay)
-	else:
-		scores = [8, 0, 0, 0]
-		for (up, right) in unavailAdjacents:
-			scores[board[up][right]] += 1
-			unPopScore = scores[color]
-			return (unPopScore, lastPlay)
+	trapScore = 0
+	avails = listAdjacents(board, lastPlay, True)
+	for (up, right) in avails:
+		bounded = boundedAvails(board, [0, up, right, size+2-up-right])
+		if bounded % 2 == 1:
+			if isMax:
+				totalScore += 1
+			else:
+				totalScore -= 1
+
+	# color = lastPlay[0]
+	# unavailAdjacents = listAdjacents(board, lastPlay, False)
+	# if isMax:
+	# 	scores = [0, 6, 6, 6]
+	# 	for (up, right) in unavailAdjacents:
+	# 		scores[board[up][right]] -= 1
+	# 		unPopScore = scores[color]
+	# 		return (unPopScore, lastPlay)
+	# else:
+	# 	scores = [8, 0, 0, 0]
+	# 	for (up, right) in unavailAdjacents:
+	# 		scores[board[up][right]] += 1
+	# 		unPopScore = scores[color]
+	# 		return (unPopScore, lastPlay)
 
 	# numAvail = len(listAdjacents(board, lastPlay, True))
 	# if numAvail==0:
 	# 	if not isMax:
-	# 		return (1+unPopScore, lastPlay)
+	# 		return (1, lastPlay)
 	# 	else:
 	# 		return (7, lastPlay)
 	# else:
 	# 	# pp.pprint(8 - numAvail)
 	# 	if not isMax:
-	# 		return (8+unPopScore - numAvail, lastPlay)
+	# 		return (8 - numAvail, lastPlay)
 	# 	else:
 	# 		return (0 + numAvail, lastPlay)
 
+	return totalScore
 
 def alphaBeta(board, lastPlay, depth, isMax, alpha, beta):
 
-	if depth == 0 or moveLoses(board, lastPlay) or len(listAdjacents(board, lastPlay, True)) == 0:
+	if depth == 0 or moveLoses(board, lastPlay):
 		# pp.pprint("hi")
 		return scoreThis(board, lastPlay, isMax)
 	else:
+		children = listAdjacents(board, lastPlay, True)
+		# pp.pprint(children)
+		if not children:
+			children = getAllAvails(board)
 		if isMax:
 			# pp.pprint("MAXIMIZER::: " + str(depth))
 			score = (negInf, [])
 			# pp.pprint("hi")
 			# pp.pprint(listAdjacents(board, lastPlay, True))
-			for (up, right) in listAdjacents(board, lastPlay, True):
+			for (up, right) in children:
 				# pp.pprint("hi")
 				for color in range(1, 4):  #for each color							
 					board[up][right] = color
@@ -184,7 +223,7 @@ def alphaBeta(board, lastPlay, depth, isMax, alpha, beta):
 					# pp.pprint("MAX: " + str(childScore[0]) + ", " + str(move))
 					# pp.pprint("CHILDSCORE: " + str(childScore))
 					board[up][right] = 0
-					if childScore[0] > score[0]:
+					if childScore[0] >= score[0]:
 						# pp.pprint(str(depth) + " :: " + str(childScore[0]) + " > " + str(score[0]))
 						score = (childScore[0], move)
 					if score[0] > alpha:
@@ -197,7 +236,7 @@ def alphaBeta(board, lastPlay, depth, isMax, alpha, beta):
 
 			score = (inf, [])
 
-			for (up, right) in listAdjacents(board, lastPlay, True):
+			for (up, right) in children:
 				for color in range(1, 4):  #for each color							
 					board[up][right] = color
 					move = [color, up, right, size+2-up-right]
@@ -206,7 +245,7 @@ def alphaBeta(board, lastPlay, depth, isMax, alpha, beta):
 					# pp.pprint("MIN: " + str(childScore[0]) + ", " + str(move))
 					# pp.pprint(childScore)
 					board[up][right] = 0
-					if childScore[0] < score[0]:
+					if childScore[0] <= score[0]:
 						# pp.pprint(str(depth) + " :: " + str(childScore[0]) + " < " + str(score[0]))
 						score = (childScore[0], move)
 					if score[0] < beta:
@@ -216,7 +255,7 @@ def alphaBeta(board, lastPlay, depth, isMax, alpha, beta):
 			return score
 
 
-bestMove = alphaBeta(board, lastPlay, 7, True, negInf, inf)
+bestMove = alphaBeta(board, lastPlay, 2, True, negInf, inf)
 nextMove = map(str, bestMove[1])
 makeMove = ",".join(nextMove)
 				
