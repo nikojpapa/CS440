@@ -8,11 +8,11 @@ negInf = float("-inf")
 #parse the input string, i.e., argv[1]
 inp = sys.argv[1].replace("[", "").split("]")
 lastPlay = inp.pop(len(inp)-1).replace("LastPlay:", "")
-size = len(inp) - 2
+size = len(inp) - 2  #board size
 remove = re.compile('(LastPlay:|\(|\))')
 lastPlay = remove.sub("", lastPlay).split(",")
 if lastPlay[0] == "null":
-	None# lastPlay =  [1,1,1,size+2]
+	None
 else:
 	for ind, num in enumerate(lastPlay):
 		lastPlay[ind] = int(num)
@@ -158,6 +158,15 @@ def scoreThis(board, lastPlay, isMax):
 			return (inf, lastPlay)
 
 	trapScore = 0
+	board[lastPlay[1]][lastPlay[2]] = 0
+	thisBound = boundedAvails(board, lastPlay, set())
+	# pp.pprint(thisBound)
+	board[lastPlay[1]][lastPlay[2]] = lastPlay[0]
+	if len(thisBound) % 2 == 0:
+		if isMax:
+			trapScore += 7
+		else:
+			trapScore -= 7
 	avails = listAdjacents(board, lastPlay, True)
 	madeBounds = set()
 	oddBounds = 0
@@ -165,7 +174,7 @@ def scoreThis(board, lastPlay, isMax):
 	for (up, right) in avails:
 		# pp.pprint("167: " + str((up, right)))
 		# pp.pprint(allBounds)
-		if (up, right) not in allBounds:
+		if (up, right) not in madeBounds:
 			bounded = boundedAvails(board, [0,up,right,size+2-up-right], set())
 			# pp.pprint(bounded)
 			madeBounds = madeBounds | bounded
@@ -175,7 +184,10 @@ def scoreThis(board, lastPlay, isMax):
 				oddBounds += 1
 	# pp.pprint(oddBounds)
 	# pp.pprint(evenBounds)
-	trapScore = (oddBounds - evenBounds) * 7
+	if isMax:
+		trapScore += (oddBounds - evenBounds) * 7
+	else:
+		trapScore += (oddBounds - evenBounds) * 7
 
 	upPopScore = 0
 	color = lastPlay[0]
@@ -186,7 +198,7 @@ def scoreThis(board, lastPlay, isMax):
 			scores[board[up][right]] += 1
 		else:
 			scores[board[up][right]] -= 1
-	unPopScore = scores[color]
+	unPopScore = 6 - scores[color]
 
 	# numAvail = len(listAdjacents(board, lastPlay, True))
 	# if numAvail==0:
@@ -205,6 +217,8 @@ def scoreThis(board, lastPlay, isMax):
 	return (totalScore, lastPlay)
 
 def alphaBeta(board, lastPlay, depth, isMax, alpha, beta):
+	if lastPlay[0] == "null":
+		return (0, [3, size, 1, 1])
 
 	if depth == 0 or moveLoses(board, lastPlay):
 		# pp.pprint("hi")
@@ -262,7 +276,7 @@ def alphaBeta(board, lastPlay, depth, isMax, alpha, beta):
 			return score
 
 
-bestMove = alphaBeta(board, lastPlay, 1, True, negInf, inf)
+bestMove = alphaBeta(board, lastPlay, 5, True, negInf, inf)
 nextMove = map(str, bestMove[1])
 makeMove = ",".join(nextMove)
 				
