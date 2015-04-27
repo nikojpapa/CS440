@@ -1,3 +1,5 @@
+lookAheadDepth = 6
+
 import sys
 import re
 import pprint
@@ -124,9 +126,9 @@ def scoreThis(board, lastPlay, isMax):  #static evaluation function
 			else:
 				oddBounds += 1
 	if isMax:  #scale trapScore so colorScore does not effect position
-		trapScore += (oddBounds - evenBounds) * 8
+		trapScore += (oddBounds - evenBounds) * 7
 	else:
-		trapScore += (oddBounds - evenBounds) * 8
+		trapScore += (oddBounds - evenBounds) * 7
 
 	#adds good score if opponent will likely end up with only one option
 	board[lastPlay[1]][lastPlay[2]] = 0
@@ -197,7 +199,7 @@ def alphaBeta(board, lastPlay, depth, isMax, alpha, beta):  #minimax with alpha-
 			return score
 
 #find the "best" move and parse it into a readable format for AtroposGame
-bestMove = alphaBeta(board, lastPlay, 5, True, negInf, inf)
+bestMove = alphaBeta(board, lastPlay, lookAheadDepth, True, negInf, inf)
 nextMove = map(str, bestMove[1])
 makeMove = ",".join(nextMove) 
 				
