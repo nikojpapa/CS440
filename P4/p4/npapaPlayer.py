@@ -25,61 +25,17 @@ for row in reversed(inp):
 
 
 #perform intelligent search to determine the next move
-def getPoss(board, lastPlay):
-	upPos = lastPlay[1]
-	rightPos = lastPlay[2]
-	leftPos = lastPlay[3]
-	possTop = upPos+1 if upPos+1 <= size else upPos
-	possBottom = upPos-1 if upPos-1 >= 1 else upPos
-	possRight = rightPos+1 if rightPos+1 <= size else rightPos
-	possLeft = rightPos-1 if rightPos-1 >= 1 else rightPos
 
-	return (upPos, rightPos, leftPos, possTop, possBottom, possRight, possLeft)
-
-
-def copyBoard(curentBoard):
-	newBoard = []
-	for i in curentBoard:
-		thisCol = []
-		for j in i:
-			thisCol.append(j)
-		newBoard.append(thisCol)
-	return newBoard
-
-
-def isAdjacent(lastPlay, newPlay):
-
-	lastUp = lastPlay[1]
-	lastRight = lastPlay[2]
-	lastLeft = lastPlay[3]
-	newColor = newPlay[0]
-	newUp = newPlay[1]
-	newRight = newPlay[2]
-	newLeft = newPlay[3]
-	# pp.pprint(lastPlay)
-	# pp.pprint(newPlay)
-
-	heightDist = newUp - lastUp
-	rightDist = newRight - lastRight
-	# pp.pprint(str(heightDist) + ", " + str(rightDist))
-
-	if abs(heightDist) > 1:
-		return False
-	elif heightDist==1 and (rightDist < -1 or rightDist > 0):
-		return False
-	elif heightDist==0 and (rightDist < -1 or rightDist == 0 or rightDist > 1):
-		return False
-	elif heightDist==-1 and (rightDist < 0 or rightDist > 1):
-		return False
+def numSpotsOnBoard(boardSize):
+	if boardSize % 2 == 1:
+		return size * (float(size / 2) + 0.5)
 	else:
-		return True
+		return size * (float(size / 2))
 
-
-def listAdjacents(board, lastPlay, avail):
-	if lastPlay[0]=="null":
-		return []
+def listAdjacents(board, lastPlay, avail):  #gets spots adjacent to last play in a clockwise list
 	upPos = lastPlay[1]
 	rightPos = lastPlay[2]
+
 	adj = []
 	if upPos > 1:
 		adj = [(upPos+1, rightPos-1), (upPos+1, rightPos), (upPos, rightPos+1), (upPos-1, rightPos+1), (upPos-1, rightPos), (upPos, rightPos-1)]
@@ -87,47 +43,44 @@ def listAdjacents(board, lastPlay, avail):
 		adj = [(upPos+1, rightPos-1), (upPos+1, rightPos), (upPos, rightPos+1), (upPos-1, rightPos), (upPos-1, rightPos-1), (upPos, rightPos-1)]
 
 	if avail=="all":
-		return adj
+		return adj  #returns all adjacent spots, available or not
 	else:
 		avails = []
 		unavails = []
 		for (up, right) in adj:
 			if board[up][right] == 0:
-				avails.append((up, right))
+				avails.append((up, right))  #spot is available
 			else:
 				unavails.append((up, right))
-		# pp.pprint(avails)
 		if avail:
-			return avails
+			return avails  #return available, adjacent spots
 		else:
-			return unavails
+			return unavails  #return unavailable, adjacent spots
 
 
-def moveLoses(board, move):
+def moveLoses(board, move):  #returns true if the move will produce a three colored triangle
 	if move[0] == "null":
 		return False
-	# pp.pprint(board)
+
 	color = move[0]
 	adjacents = listAdjacents(board, move, "all")
-	# pp.pprint(adjacents)
 
-	for ind, (up, right) in enumerate(adjacents):
+	for ind, (up, right) in enumerate(adjacents):  #go through each pair of neighboring, adjacent spots
 		colors = []
-		colors.append(color)
+		colors.append(color)  #mark color of move
 		if board[up][right] != 0:
-			colors.append(board[up][right])
+			colors.append(board[up][right])  #mark color of one spot
 
 		(up2, right2) = adjacents[(ind+1)%len(adjacents)]
 		if board[up2][right2] != 0:
-			colors.append(board[up2][right2])
+			colors.append(board[up2][right2])  #mark color of other spot
 
-		# pp.pprint(colors)
 		if len(set(colors)) == 3:
-			# pp.pprint(str((up, right)) + " = " + str(board[up][right]) + ", " + str((up2, right2)) + " = " + str(board[up2][right2]))
-			return True
+			return True  #if all three colors are present, move loses
+
 	return False
 
-def getAllAvails(board):
+def getAllAvails(board):  #get all available spots on the board
 	avails = []
 	for rowNum, row in enumerate(board):
 		for colNum, spot in enumerate(row):
@@ -135,61 +88,59 @@ def getAllAvails(board):
 				avails.append((rowNum, colNum))
 	return avails
 
-def boundedAvails(board, lastPlay, alreadySaw):
-	avails = listAdjacents(board, lastPlay, True)
+def boundedAvails(board, spot, alreadySaw):  #get all available spots within the boundary of colored spots that spot is in
+	avails = listAdjacents(board, spot, True)
 	unseenAvails = set(avails) - alreadySaw
-	myName = set([(lastPlay[1], lastPlay[2])])
-	nameList = alreadySaw | unseenAvails | myName
+	myName = set([(spot[1], spot[2])])
+	nameList = alreadySaw | unseenAvails | myName  #add spot to list and every available spot next to spot to if they haven't already been added
 
-	for (up, right) in unseenAvails:
+	for (up, right) in unseenAvails:  #call this function on all recently added spots
 		newNames = boundedAvails(board, [0, up, right, size+2-up-right], nameList)
-		nameList = nameList | newNames
+		nameList = nameList | newNames  #add reported names to list
 
-	# pp.pprint(nameList)
 	return nameList
 
-def scoreThis(board, lastPlay, isMax):
+def scoreThis(board, lastPlay, isMax):  #static evaluation function
 	totalScore = 0
 
-	if moveLoses(board, lastPlay):
+	if moveLoses(board, lastPlay):  #if the move loses, return worst score
 		if not isMax:
 			return (negInf, lastPlay)
 		else:
 			return (inf, lastPlay)
 
+	#adds good score if move creates traps for opponent
 	trapScore = 0
-	board[lastPlay[1]][lastPlay[2]] = 0
-	thisBound = boundedAvails(board, lastPlay, set())
-	# pp.pprint(thisBound)
-	board[lastPlay[1]][lastPlay[2]] = lastPlay[0]
-	if len(thisBound) % 2 == 0:
-		if isMax:
-			trapScore += 7
-		else:
-			trapScore -= 7
 	avails = listAdjacents(board, lastPlay, True)
 	madeBounds = set()
 	oddBounds = 0
 	evenBounds = 0
 	for (up, right) in avails:
-		# pp.pprint("167: " + str((up, right)))
-		# pp.pprint(allBounds)
-		if (up, right) not in madeBounds:
+		if (up, right) not in madeBounds:  #for each unique group next to lastPlay
 			bounded = boundedAvails(board, [0,up,right,size+2-up-right], set())
-			# pp.pprint(bounded)
 			madeBounds = madeBounds | bounded
 			if len(bounded) % 2 == 0:
 				evenBounds += 1
 			else:
 				oddBounds += 1
-	# pp.pprint(oddBounds)
-	# pp.pprint(evenBounds)
-	if isMax:
-		trapScore += (oddBounds - evenBounds) * 7
+	if isMax:  #scale trapScore so colorScore does not effect position
+		trapScore += (oddBounds - evenBounds) * 8
 	else:
-		trapScore += (oddBounds - evenBounds) * 7
+		trapScore += (oddBounds - evenBounds) * 8
 
-	upPopScore = 0
+	#adds good score if opponent will likely end up with only one option
+	board[lastPlay[1]][lastPlay[2]] = 0
+	thisBound = boundedAvails(board, lastPlay, set())
+	board[lastPlay[1]][lastPlay[2]] = lastPlay[0]
+	if len(thisBound) % 2 == 0:  #if the group of available spots + this move is an even number, opponent will make last move in the group if all spots are eventually filled
+		skewScore = (numSpotsOnBoard(size)-len(thisBound)) / (oddBounds+evenBounds) if oddBounds+evenBounds != 0 else 1
+		if isMax:
+			trapScore += skewScore
+		else:
+			trapScore -= skewScore
+
+	#determines color by agreeing with the color that is most shown around it
+	colorScore = 0
 	color = lastPlay[0]
 	unavailAdjacents = listAdjacents(board, lastPlay, False)
 	scores = [0, 0, 0, 0]
@@ -198,54 +149,30 @@ def scoreThis(board, lastPlay, isMax):
 			scores[board[up][right]] += 1
 		else:
 			scores[board[up][right]] -= 1
-	unPopScore = 6 - scores[color]
+	colorScore = 6 - scores[color]
 
-	# numAvail = len(listAdjacents(board, lastPlay, True))
-	# if numAvail==0:
-	# 	if not isMax:
-	# 		return (1, lastPlay)
-	# 	else:
-	# 		return (7, lastPlay)
-	# else:
-	# 	# pp.pprint(8 - numAvail)
-	# 	if not isMax:
-	# 		return (8 - numAvail, lastPlay)
-	# 	else:
-	# 		return (0 + numAvail, lastPlay)
-
-	totalScore = trapScore + unPopScore
+	totalScore = trapScore + colorScore
 	return (totalScore, lastPlay)
 
-def alphaBeta(board, lastPlay, depth, isMax, alpha, beta):
+def alphaBeta(board, lastPlay, depth, isMax, alpha, beta):  #minimax with alpha-beta pruning
 	if lastPlay[0] == "null":
-		return (0, [3, size, 1, 1])
+		return (0, [3, size, 1, 1])  #if first move, make it at the top
 
 	if depth == 0 or moveLoses(board, lastPlay):
-		# pp.pprint("hi")
 		return scoreThis(board, lastPlay, isMax)
 	else:
 		children = listAdjacents(board, lastPlay, True)
-		# pp.pprint(children)
 		if not children:
 			children = getAllAvails(board)
-		# pp.pprint("CHILDREN: " + str(children))
 		if isMax:
-			# pp.pprint("MAXIMIZER::: " + str(depth))
 			score = (negInf, [])
-			# pp.pprint("hi")
-			# pp.pprint(listAdjacents(board, lastPlay, True))
 			for (up, right) in children:
-				# pp.pprint("hi")
-				for color in range(1, 4):  #for each color							
+				for color in range(1, 4):  #for each child							
 					board[up][right] = color
 					move = [color, up, right, size+2-up-right]
-					# pp.pprint("MAX MOVE: " + str(move))
 					childScore = alphaBeta(board, move, depth-1, False, alpha, beta)
-					# pp.pprint("MAX: " + str(childScore[0]) + ", " + str(move))
-					# pp.pprint("CHILDSCORE: " + str(childScore))
 					board[up][right] = 0
 					if childScore[0] >= score[0]:
-						# pp.pprint(str(depth) + " :: " + str(childScore[0]) + " > " + str(score[0]))
 						score = (childScore[0], move)
 					if score[0] > alpha:
 						alpha = score[0]
@@ -253,21 +180,15 @@ def alphaBeta(board, lastPlay, depth, isMax, alpha, beta):
 						break
 			return score
 		else:
-			# pp.pprint("MINIMIZER::: " + str(depth))
-
 			score = (inf, [])
 
 			for (up, right) in children:
-				for color in range(1, 4):  #for each color							
+				for color in range(1, 4):  #for each child							
 					board[up][right] = color
 					move = [color, up, right, size+2-up-right]
-					# pp.pprint("MIN MOVE: " + str(move))
 					childScore = alphaBeta(board, move, depth-1, True, alpha, beta)
-					# pp.pprint("MIN: " + str(childScore[0]) + ", " + str(move))
-					# pp.pprint(childScore)
 					board[up][right] = 0
 					if childScore[0] <= score[0]:
-						# pp.pprint(str(depth) + " :: " + str(childScore[0]) + " < " + str(score[0]))
 						score = (childScore[0], move)
 					if score[0] < beta:
 						beta = score[0]
@@ -275,10 +196,10 @@ def alphaBeta(board, lastPlay, depth, isMax, alpha, beta):
 						break
 			return score
 
-
+#find the "best" move and parse it into a readable format for AtroposGame
 bestMove = alphaBeta(board, lastPlay, 5, True, negInf, inf)
 nextMove = map(str, bestMove[1])
-makeMove = ",".join(nextMove)
+makeMove = ",".join(nextMove) 
 				
 
 #print to stdout for AtroposGame
