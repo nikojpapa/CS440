@@ -1,5 +1,6 @@
 numTests = 10
 sampleSize = 10
+allNums = []
 
 for j in 1..numTests
 	sumWins = 0.0
@@ -11,5 +12,9 @@ for j in 1..numTests
 		end
 	end
 
-	puts "Win Percentage: #{sumWins / sampleSize * 100}%"
+	winP = sumWins / sampleSize * 100
+	puts "Win Percentage: #{winP}%"
+	allNums << winP
 end
+
+puts "Total Win Percentage: #{allNums.reduce(:+) / (numTests * 1.0)}%\nResults: (#{allNums.join(" + ")}) / #{numTests}"

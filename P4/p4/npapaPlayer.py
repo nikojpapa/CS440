@@ -135,11 +135,11 @@ def scoreThis(board, lastPlay, isMax):  #static evaluation function
 	thisBound = boundedAvails(board, lastPlay, set())
 	board[lastPlay[1]][lastPlay[2]] = lastPlay[0]
 	if len(thisBound) % 2 == 0:  #if the group of available spots + this move is an even number, opponent will make last move in the group if all spots are eventually filled
-		skewScore = (numSpotsOnBoard(size)-len(thisBound)) / (oddBounds+evenBounds) if oddBounds+evenBounds != 0 else 1
+		skewScore = (numSpotsOnBoard(size)-len(thisBound) * 1.0) / (oddBounds+evenBounds * 1.0) if oddBounds+evenBounds != 0 else 1.0
 		if isMax:
-			trapScore += skewScore
+			trapScore += 1
 		else:
-			trapScore -= skewScore
+			trapScore -= 1
 
 	#determines color by agreeing with the color that is most shown around it
 	colorScore = 0
