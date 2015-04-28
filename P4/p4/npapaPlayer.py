@@ -1,4 +1,4 @@
-lookAheadDepth = 6
+lookAheadDepth = 5
 
 import sys
 import re
@@ -126,9 +126,9 @@ def scoreThis(board, lastPlay, isMax):  #static evaluation function
 			else:
 				oddBounds += 1
 	if isMax:  #scale trapScore so colorScore does not effect position
-		trapScore += (oddBounds - evenBounds) * 7
+		trapScore += (oddBounds - evenBounds)
 	else:
-		trapScore += (oddBounds - evenBounds) * 7
+		trapScore += (oddBounds - evenBounds)
 
 	#adds good score if opponent will likely end up with only one option
 	board[lastPlay[1]][lastPlay[2]] = 0
@@ -148,10 +148,10 @@ def scoreThis(board, lastPlay, isMax):  #static evaluation function
 	scores = [0, 0, 0, 0]
 	for (up, right) in unavailAdjacents:
 		if isMax:
-			scores[board[up][right]] += 1
+			scores[board[up][right]] += (trapScore / 7)
 		else:
-			scores[board[up][right]] -= 1
-	colorScore = 6 - scores[color]
+			scores[board[up][right]] -= (trapScore / 7)
+	colorScore = trapScore - scores[color]
 
 	totalScore = trapScore + colorScore
 	return (totalScore, lastPlay)
