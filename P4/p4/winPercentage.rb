@@ -1,4 +1,4 @@
-sampleSize = 20
+sampleSize = 10
 sumWins = 0.0
 
 for i in 1..sampleSize
