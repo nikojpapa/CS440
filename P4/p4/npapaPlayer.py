@@ -3,7 +3,6 @@ lookAheadDepth = 5
 import sys
 import re
 import pprint
-pp = pprint.PrettyPrinter(indent=4)
 inf = float("inf")
 negInf = float("-inf")
 
@@ -125,17 +124,13 @@ def scoreThis(board, lastPlay, isMax):  #static evaluation function
 				evenBounds += 1
 			else:
 				oddBounds += 1
-	if isMax:  #scale trapScore so colorScore does not effect position
-		trapScore += (oddBounds - evenBounds)
-	else:
-		trapScore += (oddBounds - evenBounds)
+	trapScore += (oddBounds - evenBounds)
 
 	#adds good score if opponent will likely end up with only one option
 	board[lastPlay[1]][lastPlay[2]] = 0
 	thisBound = boundedAvails(board, lastPlay, set())
 	board[lastPlay[1]][lastPlay[2]] = lastPlay[0]
-	if len(thisBound) % 2 == 0:  #if the group of available spots + this move is an even number, opponent will make last move in the group if all spots are eventually filled
-		skewScore = (numSpotsOnBoard(size)-len(thisBound) * 1.0) / (oddBounds+evenBounds * 1.0) if oddBounds+evenBounds != 0 else 1.0
+	if len(thisBound) % 2 == 0:  #opponent will make last move in the group if all spots are eventually filled
 		if isMax:
 			trapScore += 1
 		else:
@@ -147,7 +142,7 @@ def scoreThis(board, lastPlay, isMax):  #static evaluation function
 	unavailAdjacents = listAdjacents(board, lastPlay, False)
 	scores = [0, 0, 0, 0]
 	for (up, right) in unavailAdjacents:
-		if isMax:
+		if isMax:  #scale colorScore so it does not affect position
 			scores[board[up][right]] += (trapScore / 7)
 		else:
 			scores[board[up][right]] -= (trapScore / 7)
